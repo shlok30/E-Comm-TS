@@ -25,7 +25,7 @@ router.post("/signup",async (req : Request, res: Response) => {
             res.status(400).json({message : "Username already exists!"});
             return
         }
-        const newUser = new UserModel({username, password});
+        const newUser = new UserModel({username, password, cart: [], wishlist : []});
         await newUser.save()
         res.status(201).json({message : "Admin created successfully"})
     } catch(e){
@@ -112,7 +112,7 @@ router.post('/wishlist', auth, async (req: CustomRequest, res: Response) => {
             res.status(404).json({message: "User not found"});
             return
         }
-        //First check if product is already in cart?
+        //First check if product is already in Wishlist?
         const productAlreadyInWishlist = user.wishlist?.includes(productId);
         if(productAlreadyInWishlist){
             res.status(400).json({message: "Product already in wishlist!"});
@@ -134,6 +134,71 @@ router.post('/wishlist', auth, async (req: CustomRequest, res: Response) => {
 })
 
 //Delete from Cart
+router.delete("/cart/:productId", auth, async (req: CustomRequest, res : Response) => {
+    const username = req.username;
+    const {productId} = req.params;
+    try{
+        //Check if such a product even exists
+        const selectedProduct = await ProductModel.findById(productId);
+        if(!selectedProduct){
+            res.status(400).json({message: "No Such Product Exists"});
+            return;
+        }
+        //Check if product exists in users cart
+        const user = (await UserModel.findOne({username}))!;
+        const productToDeleteIdx = user.cart.findIndex(prodId => prodId.toString() === productId);
+        if(productToDeleteIdx === -1){
+            res.status(400).json({message: "No Such Product Exists"});
+            return;
+        }
+       user.cart.splice(productToDeleteIdx,1); //Need to check a better way to handle this
+       await user.save();
+    } catch(e){
+        res.status(500).json({message: "Something went wrong!"});
+    }
+})
 //Delete from Wishlist
+
+router.delete("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
+    const username = req.username;
+    const { type, productId } = req.params;
+
+    try {
+        // Validate the type
+        if (!['cart', 'wishlist'].includes(type)) {
+            res.status(400).json({ message: "Invalid type specified. Must be 'cart' or 'wishlist'." });
+            return;
+        }
+
+        // Find the user
+        const user = (await UserModel.findOne({ username }))!;
+
+        // Determine the collection to modify
+        const targetList = type === "cart" ? user.cart : user.wishlist;
+
+        // Check if the product exists in the target list
+        const productToDeleteIdx = targetList.findIndex((prodId) => prodId.toString() === productId);
+        if (productToDeleteIdx === -1) {
+            res.status(400).json({ message: `Product not found in ${type}` });
+            return;
+        }
+
+        // Remove the product from the target list
+        targetList.splice(productToDeleteIdx, 1);
+        await user.save();
+
+        res.status(200).json({ message: `Product was removed from ${type}!` });
+    } catch (e) {
+        res.status(500).json({ message: "Something went wrong!" });
+    }
+});
+
+//Increment/Decrement Product from Cart/Wishlist
+
+router.put("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
+    const username = req.username;
+    const {type, productId} = req.params;
+    if(!['cart','wishlist'].includes())
+})
 
 export default router;
