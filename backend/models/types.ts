@@ -34,8 +34,8 @@ export interface IProduct extends Omit<z.infer<typeof productSchema>, 'category'
 export interface ICategory extends z.infer<typeof categorySchema>,Document{}
 
 export interface IUser extends Omit<z.infer<typeof userZodSchema>, 'cart' | 'wishlist'>, Document{
-    cart?: Schema.Types.ObjectId[],
-    wishlist?: Schema.Types.ObjectId[]
+    cart: Schema.Types.ObjectId[],
+    wishlist: Schema.Types.ObjectId[]
 }
 
 export default adminSchema
