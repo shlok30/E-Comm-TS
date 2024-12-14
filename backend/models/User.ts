@@ -4,7 +4,7 @@ import { IUser } from "./types";
 const userSchema = new mongoose.Schema<IUser>({
     username : {type: "string", required: true},
     password : {type: "string", required : true},
-    cart: {type: [Schema.Types.ObjectId], ref: "Product", required : true},
+    cart: [{product : {type: Schema.Types.ObjectId, required : true, ref : "Product"} , quantity : {type: "number", required: true, default : 1}}],
     wishlist : {type: [Schema.Types.ObjectId], required: true}
 })
 

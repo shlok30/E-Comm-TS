@@ -57,7 +57,7 @@ router.post("/login", async (req: Request, res: Response) => {
 router.get("/", auth, async (req : CustomRequest, res : Response) => {
     const username = req.username;
     try{
-        const user = await UserModel.findOne({username})?.populate("cart");
+        const user = await UserModel.findOne({username})?.populate("cart.product");
         if(user){
             res.status(200).json({user});
             return
@@ -78,7 +78,7 @@ router.post("/cart",auth, async (req: CustomRequest, res: Response) => {
             return
         }
         //First check if product is already in cart?
-        const productAlreadyInCart = user.cart?.includes(productId);
+        const productAlreadyInCart = user.cart.find(({product: prodId}) => prodId.toString() === productId);
         if(productAlreadyInCart){
             res.status(400).json({message: "Product already in cart!"});
             return
@@ -95,7 +95,7 @@ router.post("/cart",auth, async (req: CustomRequest, res: Response) => {
             return;
         }
         //Add to cart with 1 quantity
-        user.cart?.push(productId);
+        user.cart?.push({product : productId, quantity : 1});
         await user.save();
         res.status(201).json({message: "Product was added to cart!"});
     } catch(e){
@@ -194,11 +194,27 @@ router.delete("/:type/:productId", auth, async (req: CustomRequest, res: Respons
 });
 
 //Increment/Decrement Product from Cart/Wishlist
+// router.put("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
+//     const username = req.username;
+//     const {type, productId} = req.params;
+//     const {action} = req.body;
+//     if(!['cart','wishlist'].includes(type)){
+//         res.status(400).json({MessageChannel})
+//         return
+//     }
+//     //We are not checking if new quantity exceeds total quantity here. Instead we will not allow user to buy if thats the case
+//     try{
+//         const user = (await UserModel.findOne({username}))!;
+//         const targetList = type === "cart" ? user.cart : user.wishlist;
+//         const selectedProductIdx = targetList.findIndex(prodId => prodId.toString() === productId);
+//         if (selectedProductIdx === -1) {
+//             res.status(400).json({ message: `Product not found in ${type}` });
+//             return;
+//         }
 
-router.put("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
-    const username = req.username;
-    const {type, productId} = req.params;
-    if(!['cart','wishlist'].includes())
-})
+//     } catch(e){
+
+//     }
+// })
 
 export default router;

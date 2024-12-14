@@ -33,8 +33,13 @@ export interface IProduct extends Omit<z.infer<typeof productSchema>, 'category'
 
 export interface ICategory extends z.infer<typeof categorySchema>,Document{}
 
+interface ICart {
+    product : Schema.Types.ObjectId[],
+    quantity: number
+}
+
 export interface IUser extends Omit<z.infer<typeof userZodSchema>, 'cart' | 'wishlist'>, Document{
-    cart: Schema.Types.ObjectId[],
+    cart: ICart[],
     wishlist: Schema.Types.ObjectId[]
 }
 
