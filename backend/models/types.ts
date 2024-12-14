@@ -40,7 +40,7 @@ interface ICart {
 
 export interface IUser extends Omit<z.infer<typeof userZodSchema>, 'cart' | 'wishlist'>, Document{
     cart: ICart[],
-    wishlist: Schema.Types.ObjectId[]
+    wishlist: ICart[]
 }
 
 export default adminSchema

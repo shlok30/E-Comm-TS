@@ -133,32 +133,7 @@ router.post('/wishlist', auth, async (req: CustomRequest, res: Response) => {
     }
 })
 
-//Delete from Cart
-router.delete("/cart/:productId", auth, async (req: CustomRequest, res : Response) => {
-    const username = req.username;
-    const {productId} = req.params;
-    try{
-        //Check if such a product even exists
-        const selectedProduct = await ProductModel.findById(productId);
-        if(!selectedProduct){
-            res.status(400).json({message: "No Such Product Exists"});
-            return;
-        }
-        //Check if product exists in users cart
-        const user = (await UserModel.findOne({username}))!;
-        const productToDeleteIdx = user.cart.findIndex(prodId => prodId.toString() === productId);
-        if(productToDeleteIdx === -1){
-            res.status(400).json({message: "No Such Product Exists"});
-            return;
-        }
-       user.cart.splice(productToDeleteIdx,1); //Need to check a better way to handle this
-       await user.save();
-    } catch(e){
-        res.status(500).json({message: "Something went wrong!"});
-    }
-})
-//Delete from Wishlist
-
+//Delete from Wishlist/Cart
 router.delete("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
     const username = req.username;
     const { type, productId } = req.params;
@@ -194,27 +169,42 @@ router.delete("/:type/:productId", auth, async (req: CustomRequest, res: Respons
 });
 
 //Increment/Decrement Product from Cart/Wishlist
-// router.put("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
-//     const username = req.username;
-//     const {type, productId} = req.params;
-//     const {action} = req.body;
-//     if(!['cart','wishlist'].includes(type)){
-//         res.status(400).json({MessageChannel})
-//         return
-//     }
-//     //We are not checking if new quantity exceeds total quantity here. Instead we will not allow user to buy if thats the case
-//     try{
-//         const user = (await UserModel.findOne({username}))!;
-//         const targetList = type === "cart" ? user.cart : user.wishlist;
-//         const selectedProductIdx = targetList.findIndex(prodId => prodId.toString() === productId);
-//         if (selectedProductIdx === -1) {
-//             res.status(400).json({ message: `Product not found in ${type}` });
-//             return;
-//         }
-
-//     } catch(e){
-
-//     }
-// })
+router.put("/:type/:productId", auth, async (req: CustomRequest, res: Response) => {
+    const username = req.username;
+    const {type, productId} = req.params;
+    const {action} = req.body;
+    if(!['cart','wishlist'].includes(type)){
+        res.status(400).json({MessageChannel})
+        return
+    }
+    // Validate the 'action' parameter
+    if (!['increment', 'decrement'].includes(action)) {
+        res.status(400).json({ message: "Invalid action. Must be 'increment' or 'decrement'." });
+        return;
+    }
+    //We are not checking if new quantity exceeds total quantity here. Instead we will not allow user to buy if thats the case
+    try{
+        const user = (await UserModel.findOne({username}))!;
+        const targetList = type === "cart" ? user.cart : user.wishlist;
+        const selectedProductIdx = targetList.findIndex(({product : prodId}) => prodId.toString() === productId);
+        if (selectedProductIdx === -1) {
+            res.status(400).json({ message: `Product not found in ${type}` });
+            return;
+        }
+        const updatedQuantity = action === 'increment' ? targetList[selectedProductIdx].quantity + 1 : targetList[selectedProductIdx].quantity - 1;
+        if(updatedQuantity <= 0){
+            targetList.splice(selectedProductIdx, 1);
+            await user.save();
+            res.status(200).json({ message: `Product was removed from ${type}!` });
+            return
+        }
+        //Update quantity
+        targetList[selectedProductIdx].quantity = updatedQuantity;
+        await user.save();
+        res.status(200).json({message: `Product quantity was ${action}ed in ${type}`});
+    } catch(e){
+        res.status(500).json({ message: "Something went wrong!" });
+    }
+})
 
 export default router;
