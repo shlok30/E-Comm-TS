@@ -59,14 +59,15 @@ router.post("/login", async (req: Request, res: Response) => {
 router.get("/", auth, async (req : CustomRequest, res : Response) => {
     const username = req.username;
     try{
-        const user = await UserModel.findOne({username})?.populate("cart.product");
+        const user = await UserModel.findOne({username})?.populate({path: "cart.product", populate : {path: 'category'}}).populate({path: "wishlist.product", populate : {path: 'category'}});
         if(user){
             res.status(200).json({user});
             return
         }
         res.status(404).json({message: "User not found"});
     } catch(e){
-        res.status(500).json({message: "Something went wrong!"})
+        res.status(500).json({message: "Something went wrong!"});
+        console.log(e);
     }
 })
 
