@@ -1,10 +1,12 @@
 import express, { Request, Response } from "express";
+import mongoose from "mongoose";
 import { userZodSchema } from "../models/types";
 import { getValidationError } from "../utils";
 import UserModel from "../models/User";
 import auth from "../middleware/auth";
 import { CustomRequest } from "../types";
 import ProductModel from "../models/Product";
+
 
 const router = express.Router();
 const jwt = require("jsonwebtoken");
@@ -71,6 +73,10 @@ router.get("/", auth, async (req : CustomRequest, res : Response) => {
 router.post("/cart",auth, async (req: CustomRequest, res: Response) => {
     const username = req.username;
     const {productId} = req.body;
+    if (typeof productId !== 'string') {
+        res.status(400).json({ message: "Invalid productId. It must be a string." });
+        return;
+    }
     try{
         const user = await UserModel.findOne({username});
         if(!user){
@@ -95,7 +101,7 @@ router.post("/cart",auth, async (req: CustomRequest, res: Response) => {
             return;
         }
         //Add to cart with 1 quantity
-        user.cart?.push({product : productId, quantity : 1});
+        user.cart?.push({product : new mongoose.Types.ObjectId(productId), quantity : 1});
         await user.save();
         res.status(201).json({message: "Product was added to cart!"});
     } catch(e){
@@ -106,6 +112,10 @@ router.post("/cart",auth, async (req: CustomRequest, res: Response) => {
 router.post('/wishlist', auth, async (req: CustomRequest, res: Response) => {
     const username = req.username;
     const {productId} = req.body;
+    if (typeof productId !== 'string') {
+        res.status(400).json({ message: "Invalid productId. It must be a string." });
+        return;
+    }
     try{
         const user = await UserModel.findOne({username});
         if(!user){
@@ -113,8 +123,8 @@ router.post('/wishlist', auth, async (req: CustomRequest, res: Response) => {
             return
         }
         //First check if product is already in Wishlist?
-        const productAlreadyInWishlist = user.wishlist?.includes(productId);
-        if(productAlreadyInWishlist){
+        const productIdxInWishlist = user.wishlist?.findIndex(({product:prodId}) => prodId.toString() === productId);
+        if(productIdxInWishlist !== -1){
             res.status(400).json({message: "Product already in wishlist!"});
             return
         }
@@ -125,7 +135,7 @@ router.post('/wishlist', auth, async (req: CustomRequest, res: Response) => {
             return;
         }
         //Add to wishlist with 1 quantity
-        user.wishlist?.push(productId);
+        user.wishlist?.push({product : new mongoose.Types.ObjectId(productId), quantity : 1});
         await user.save();
         res.status(201).json({message: "Product was added to wishlist!"});
     } catch(e){

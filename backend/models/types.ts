@@ -1,5 +1,5 @@
-import { Document, Schema } from "mongoose";
-import {any, z} from "zod";
+import { Document, Types } from "mongoose";
+import {z} from "zod";
 
 const adminSchema = z.object({
     username: z.string(),
@@ -28,13 +28,13 @@ export const userZodSchema = z.object({
 export interface IAdmin extends z.infer<typeof adminSchema>,Document{}
 
 export interface IProduct extends Omit<z.infer<typeof productSchema>, 'category'>,Document{
-    category: Schema.Types.ObjectId
+    category: Types.ObjectId
 }
 
 export interface ICategory extends z.infer<typeof categorySchema>,Document{}
 
 interface ICart {
-    product : Schema.Types.ObjectId[],
+    product : Types.ObjectId,
     quantity: number
 }
 
